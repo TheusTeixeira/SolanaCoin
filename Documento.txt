@@ -36,7 +36,7 @@ solana config set --url https://api.testnet.solana.com //usa a testnet (carteira
 solana config set --url https://api.devnet.solana.com  //usa a devnet (Carteira para programador = dinheiro teste limitado)
 solana config set --url https://api.mainnet-beta.solana.com //usa a mainnet (Carteira real = dinheiro real)
 solana balance // ver o saldo
-solana airdrop 1 // adiciona 1 solana falça na carteira  para poder criar a moeda limitada a 1 vez por dia pelo sistema
+solana airdrop 1 // adiciona 1 solana falsa na carteira  para poder criar a moeda limitada a 1 vez por dia pelo sistema
 
 //pacote de comandos
 cargo install spl-token-cli // instala a cli spl-token (pacote para poder trabalhar com o token)
