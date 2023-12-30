@@ -1,0 +1,135 @@
+https://code.visualstudio.com/download
+https://nodejs.org/en/download
+npm install -g ts-node
+npm install -g typescript
+https://github.com/ //open account
+https://explorer.solana.com/
+wsl --install // faz a instalação pelo cmd
+
+
+//visualStudio
+npm install @metaplex-foundation/mpl-token-metadata --save
+npm install @solana/web3.js --save
+npm install @project-serum/anchor --save
+
+solana-keygen grind --starts-with <name>:1 //<address_token/>
+solana-keygen grind --starts-with <name>:1 //<address_token_main/>
+
+solana config set --url https://api.devnet.solana.com --keypair <main-keypair.json>
+solana airdrop 2
+spl-token create-token <address_token/> // save account
+spl-token mint (token address) (Number of tokens) (exp: 250000000)
+spl-token create-account (token address)
+ts-node first.ts // start or uploader
+
+
+
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh // instalar o rust
+sh -c "$(curl -sSfL https://release.solana.com/v1.17.13/install)" // instalar o solana
+
+solana-keygen new -o ./secretKey.json //criar uma chama secreta
+
+solana config set --keypair ./secretaChave.json // define como padrao a chave secreta passando sua localização
+
+solana config set --url https://api.testnet.solana.com //usa a testnet (carteira para programador = dinheiro teste avontade)
+solana config set --url https://api.devnet.solana.com  //usa a devnet (Carteira para programador = dinheiro teste limitado)
+solana config set --url https://api.mainnet-beta.solana.com //usa a mainnet (Carteira real = dinheiro real)
+solana balance // ver o saldo
+solana airdrop 1 // adiciona 1 solana falça na carteira  para poder criar a moeda limitada a 1 vez por dia pelo sistema
+
+//pacote de comandos
+cargo install spl-token-cli // instala a cli spl-token (pacote para poder trabalhar com o token)
+spl-token create-token  // cria o  address_token
+spl-token create-account <address_token> // cria a conta  account_token
+spl-token mint <address_token> <number> <account_token>
+spl-token accounts // verifica as contas
+
+spl-token authorize <address_token> mint --disable 
+// autoriza a desativar a mintagem a criação de mais moeda
+//desative a cunhagem futura:("Mint" pode se referir à criação ou geração de novos tokens em uma blockchain) 
+
+ spl-token transfer --fund-recipient <address_token> <number> <destination_account>
+spl-token supply <address_token> // verifica o fornecimento da conta 
+spl-token account-info <address_token > verifica as informaçoes da conta
+
+
+
+import {Collection, CreateMetadataAccountV3InstructionAccounts, CreateMetadataAccountV3InstructionDataArgs, Creator, MPL_TOKEN_METADATA_PROGRAM_ID, UpdateMetadataAccountV2InstructionAccounts, UpdateMetadataAccountV2InstructionData, Uses, createMetadataAccountV3, updateMetadataAccountV2, findMetadataPda} from "@metaplex-foundation/mpl-token-metadata";
+import * as web3 from "@solana/web3.js";
+import { PublicKey, createSignerFromKeypair, none, signerIdentity, some } from "@metaplex-foundation/umi";
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { fromWeb3JsKeypair, fromWeb3JsPublicKey} from '@metaplex-foundation/umi-web3js-adapters';
+
+export function loadWalletKey(keypairFile:string): web3.Keypair {
+    const fs = require("fs");
+    const loaded = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(fs.readFileSync(keypairFile).toString())),
+    );
+    return loaded;
+  }
+
+const INITIALIZE = true;
+
+async function main(){
+    console.log("let's name some tokens in 2024!");
+    const myKeypair = loadWalletKey("main_token.json");
+    const mint = new web3.PublicKey("pub_token");
+
+    const umi = createUmi("https://api.devnet.solana.com");
+    const signer = createSignerFromKeypair(umi, fromWeb3JsKeypair(myKeypair))
+    umi.use(signerIdentity(signer, true))
+
+    const ourMetadata = { // TODO change those values!
+        name: "name coin", 
+        symbol: "syb",
+        uri: "linkmetada",
+    }
+    const onChainData = {
+        ...ourMetadata,
+        // we don't need that
+        sellerFeeBasisPoints: 0,
+        creators: none<Creator[]>(),
+        collection: none<Collection>(),
+        uses: none<Uses>(),
+    }
+    if(INITIALIZE){
+        const accounts: CreateMetadataAccountV3InstructionAccounts = {
+            mint: fromWeb3JsPublicKey(mint),
+            mintAuthority: signer,
+        }
+        const data: CreateMetadataAccountV3InstructionDataArgs = {
+            isMutable: true,
+            collectionDetails: null,
+            data: onChainData
+        }
+        const txid = await createMetadataAccountV3(umi, {...accounts, ...data}).sendAndConfirm(umi);
+        console.log(txid)
+    } else {
+        const data: UpdateMetadataAccountV2InstructionData = {
+            data: some(onChainData),
+            discriminator: 0,
+            isMutable: some(true),
+            newUpdateAuthority: none<PublicKey>(),
+            primarySaleHappened: none<boolean>()
+        }
+        const accounts: UpdateMetadataAccountV2InstructionAccounts = {
+            metadata: findMetadataPda(umi,{mint: fromWeb3JsPublicKey(mint)}),
+            updateAuthority: signer
+        }
+        const txid = await updateMetadataAccountV2(umi, {...accounts, ...data} ).sendAndConfirm(umi);
+        console.log(txid)
+    }
+
+}
+
+main();
+
+
+//metadate.json
+{
+    "name": "name token",
+    "symbol": "$xxx",
+    "description": "loren loren loren",
+    "image": "jpg.html"
+  }
